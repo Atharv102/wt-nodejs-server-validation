@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduEnroll — Node.js Server-Side Validation Portal</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-block">
+        <div class="brand-badge">Node</div>
+        <div>
+          <div class="brand-title">EduEnroll Portal</div>
+          <div class="brand-subtitle">Node.js Server-Side Validation & HTTP REST Architecture • Practical No. 4</div>
+        </div>
+      </div>
+
+      <div class="header-tools">
+        <div class="status-pill" id="serverStatusBadge">
+          <span class="status-dot"></span>
+          <span id="serverStatusText">Node.js Server: Connected</span>
+        </div>
+
+        <button type="button" class="btn-icon" id="themeToggleBtn" title="Toggle Dark/Light Mode">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-wrapper">
+    <!-- Tabs Nav -->
+    <nav class="tabs-nav" aria-label="Portal views">
+      <button type="button" class="tab-btn active" data-tab="tab-form">
+        <span>📝 1. Admission Form (POST /api/enroll)</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-records">
+        <span>🎓 2. Enrolled Candidates (GET /api/enrollments)</span>
+        <span class="badge-pill" id="recordCountBadge">0</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-docs">
+        <span>📖 3. Server Validation Rules & API</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-json">
+        <span>🔍 4. Raw HTTP Payload Inspector</span>
+      </button>
+    </nav>
+
+    <!-- Tab 1: Form View -->
+    <section id="tab-form" class="tab-pane active">
+      <!-- Quick Test Sandbox Bar -->
+      <div class="eval-sandbox">
+        <div class="sandbox-label">
+          <span>⚡ <strong>Examiner Quick-Test Sandbox:</strong></span>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Inspect server HTTP response codes directly.</span>
+        </div>
+        <div class="sandbox-btns">
+          <button type="button" class="btn-pill" id="btnFillValid">✓ Fill Valid Candidate (201 Created)</button>
+          <button type="button" class="btn-pill" id="btnFillInvalid" style="color: var(--danger);">✗ Test Server Errors (400 Bad Request)</button>
+          <button type="button" class="btn-pill" id="btnClearForm">Reset</button>
+        </div>
+      </div>
+
+      <!-- HTTP Response Alert Banner -->
+      <div id="responseAlert" class="response-alert">
+        <div class="alert-header">
+          <span id="alertTitle">Server Response</span>
+          <span id="alertCode" class="http-code-badge">HTTP 200</span>
+        </div>
+        <p id="alertMessage" style="font-size: 0.9rem; margin-bottom: 0.5rem;"></p>
+        <ul id="alertErrorList" style="list-style: disc; margin-left: 1.25rem; font-size: 0.84rem; display: none;"></ul>
+      </div>
+
+      <!-- Main Form Card -->
+      <div class="content-card">
+        <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+          <h2 style="font-size: 1.3rem; font-weight: 700;">Student Course Admission Application</h2>
+          <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 0.2rem;">
+            All form data is submitted to the Node.js backend server via HTTP POST and verified by server-side validation middleware.
+          </p>
+        </div>
+
+        <form id="enrollmentForm" novalidate>
+          <div class="form-grid">
+            <!-- Full Name -->
+            <div class="form-group col-span-2">
+              <label class="form-label" for="fullName">
+                <span>Full Legal Name <span class="req-star">*</span></span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Min 3 characters, alphabets only</span>
+              </label>
+              <input type="text" id="fullName" name="fullName" class="form-input" placeholder="e.g. Atharv Jadhav" required>
+              <div class="field-error-msg" id="err_fullName"></div>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label" for="email">
+                <span>Email Address <span class="req-star">*</span></span>
+              </label>
+              <input type="email" id="email" name="email" class="form-input" placeholder="e.g. atharv.jadhav@mitaoe.ac.in" required>
+              <div class="field-error-msg" id="err_email"></div>
+            </div>
+
+            <!-- Mobile Phone -->
+            <div class="form-group">
+              <label class="form-label" for="phone">
+                <span>10-Digit Mobile Number <span class="req-star">*</span></span>
+              </label>
+              <input type="tel" id="phone" name="phone" maxlength="10" class="form-input" placeholder="e.g. 9876543210" required>
+              <div class="field-error-msg" id="err_phone"></div>
+            </div>
+
+            <!-- Date of Birth -->
+            <div class="form-group">
+              <label class="form-label" for="dob">
+                <span>Date of Birth <span class="req-star">*</span></span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Age &ge; 18 years required</span>
+              </label>
+              <input type="date" id="dob" name="dob" class="form-input" required>
+              <div class="field-error-msg" id="err_dob"></div>
+            </div>
+
+            <!-- Gender -->
+            <div class="form-group">
+              <label class="form-label" for="gender">
+                <span>Gender Identification <span class="req-star">*</span></span>
+              </label>
+              <select id="gender" name="gender" class="form-select" required>
+                <option value="">-- Select Gender --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Non-Binary">Non-Binary</option>
+                <option value="Other">Other</option>
+              </select>
+              <div class="field-error-msg" id="err_gender"></div>
+            </div>
+
+            <!-- Course Program -->
+            <div class="form-group col-span-2">
+              <label class="form-label" for="course">
+                <span>Academic Degree Program <span class="req-star">*</span></span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Loaded dynamically from GET /api/courses</span>
+              </label>
+              <select id="course" name="course" class="form-select" required>
+                <option value="">-- Loading Courses from Server... --</option>
+              </select>
+              <div class="field-error-msg" id="err_course"></div>
+            </div>
+
+            <!-- Current Semester -->
+            <div class="form-group">
+              <label class="form-label" for="semester">
+                <span>Current Semester <span class="req-star">*</span></span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Semester 1 to 8</span>
+              </label>
+              <select id="semester" name="semester" class="form-select" required>
+                <option value="">-- Select Semester --</option>
+                <option value="1">Semester 1 (First Year)</option>
+                <option value="2">Semester 2 (First Year)</option>
+                <option value="3">Semester 3 (Second Year)</option>
+                <option value="4">Semester 4 (Second Year)</option>
+                <option value="5">Semester 5 (Third Year)</option>
+                <option value="6">Semester 6 (Third Year)</option>
+                <option value="7">Semester 7 (Final Year)</option>
+                <option value="8">Semester 8 (Final Year)</option>
+              </select>
+              <div class="field-error-msg" id="err_semester"></div>
+            </div>
+
+            <!-- Qualifying Percentage -->
+            <div class="form-group">
+              <label class="form-label" for="percentage">
+                <span>Qualifying HSC / Diploma % <span class="req-star">*</span></span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Between 40.0% and 100.0%</span>
+              </label>
+              <input type="number" step="0.1" id="percentage" name="percentage" class="form-input" placeholder="e.g. 89.4" required>
+              <div class="field-error-msg" id="err_percentage"></div>
+            </div>
+
+            <!-- Aadhaar / National ID -->
+            <div class="form-group">
+              <label class="form-label" for="nationalId">
+                <span>12-Digit National ID (Aadhaar) <span class="req-star">*</span></span>
+              </label>
+              <input type="text" id="nationalId" name="nationalId" maxlength="12" class="form-input" placeholder="12-digit numeric ID" required>
+              <div class="field-error-msg" id="err_nationalId"></div>
+            </div>
+
+            <!-- City / Domicile -->
+            <div class="form-group">
+              <label class="form-label" for="city">
+                <span>City / Domicile <span class="req-star">*</span></span>
+              </label>
+              <input type="text" id="city" name="city" class="form-input" placeholder="e.g. Pune" required>
+              <div class="field-error-msg" id="err_city"></div>
+            </div>
+
+            <!-- Statement of Purpose -->
+            <div class="form-group col-span-2">
+              <label class="form-label" for="statementOfPurpose">
+                <span>Statement of Purpose / Academic Goals <span class="req-star">*</span></span>
+                <span id="sopCounter" style="font-size: 0.75rem; color: var(--text-muted);">0 / 500 characters (min 30)</span>
+              </label>
+              <textarea id="statementOfPurpose" name="statementOfPurpose" rows="3" class="form-textarea" placeholder="Describe your academic interests, engineering background, and aspirations..."></textarea>
+              <div class="field-error-msg" id="err_statementOfPurpose"></div>
+            </div>
+
+            <!-- Declaration Checkbox -->
+            <div class="form-group col-span-2">
+              <label style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.88rem; cursor: pointer;">
+                <input type="checkbox" id="agreement" name="agreement" style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--primary);">
+                <span>
+                  I declare that the information provided is truthful and satisfies all eligibility criteria. I agree to the institution's Code of Conduct and Server Validation Terms. <span class="req-star">*</span>
+                </span>
+              </label>
+              <div class="field-error-msg" id="err_agreement"></div>
+            </div>
+          </div>
+
+          <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary" id="btnSubmit">
+              <span>🚀 Submit Application to Node.js Server</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Tab 2: Candidate Records -->
+    <section id="tab-records" class="tab-pane" style="display: none;">
+      <div class="content-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <h2 style="font-size: 1.3rem; font-weight: 700;">Server-Side Candidate Database</h2>
+            <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 0.2rem;">
+              Retrieved directly from the backend via <code>GET /api/enrollments</code>.
+            </p>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btnRefreshList" style="padding: 0.5rem 1rem;">🔄 Refresh Database</button>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+          <input type="text" id="searchInput" class="form-input" style="flex: 1 1 250px;" placeholder="Search by name, email, city, or ID...">
+          <select id="filterCourse" class="form-select" style="min-width: 220px;">
+            <option value="all">All Courses</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Enrollment ID</th>
+                <th>Candidate Name</th>
+                <th>Contact</th>
+                <th>Degree Course</th>
+                <th>Sem</th>
+                <th>Percentage</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="enrollmentsTableBody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--text-muted);">Loading server records...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: API & Architecture Documentation -->
+    <section id="tab-docs" class="tab-pane" style="display: none;">
+      <div class="content-card">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem;">Node.js Server Architecture & Validation Rules</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+          <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-color);">
+            <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 0.5rem;">1. Routing & Modules</h3>
+            <p style="font-size: 0.84rem; color: var(--text-secondary);">
+              Organized with modular Express Router (<code>routes/enrollmentRoutes.js</code>) separating GET, POST, and DELETE methods cleanly from the application logic.
+            </p>
+          </div>
+
+          <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-color);">
+            <h3 style="font-size: 1rem; color: #10b981; margin-bottom: 0.5rem;">2. Server Validation Middleware</h3>
+            <p style="font-size: 0.84rem; color: var(--text-secondary);">
+              Enforces business rules on the backend (<code>middleware/validator.js</code>). Rejects invalid payloads with <code>HTTP 400 Bad Request</code> before database insertion.
+            </p>
+          </div>
+
+          <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-color);">
+            <h3 style="font-size: 1rem; color: #8b5cf6; margin-bottom: 0.5rem;">3. Input Sanitization (XSS Defense)</h3>
+            <p style="font-size: 0.84rem; color: var(--text-secondary);">
+              Input sanitizer (<code>middleware/sanitizer.js</code>) strips all HTML/script tags from incoming payloads, normalizes spaces, and lowercases emails.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: JSON Payload Inspector -->
+    <section id="tab-json" class="tab-pane" style="display: none;">
+      <div class="content-card">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">Live HTTP Request / Response Inspector</h2>
+        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          View the exact JSON payload dispatched to <code>POST /api/enroll</code> and the server's raw HTTP response body.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+          <div>
+            <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Client Request Body (Sent to Server)</h3>
+            <pre class="json-display" id="jsonRequest">// Submit the form or click quick-fill to view the outgoing JSON payload</pre>
+          </div>
+          <div>
+            <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Server Response Body (Returned by Node.js)</h3>
+            <pre class="json-display" id="jsonResponse">// Server response will render here with HTTP status codes and validation payloads</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "eduenroll-server-validation",
+  "version": "1.0.0",
+  "description": "EduEnroll - Node.js Server-Side Validation and Enrollment Web Application",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test/server.test.js",
+    "deploy": "gh-pages -d public"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0",
+    "puppeteer-core": "^24.4.0"
+  },
+  "author": "Atharv Jadhav",
+  "license": "MIT"
+}
